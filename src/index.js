@@ -1,7 +1,7 @@
-const { EOL } = require('os');
+const { EOF } = require('os');
 
-const getBlocks = exports.getBlocks = (md) => {
-    const blocks = md.split(EOL + EOL);
+const getBlocks = exports.getBlocks = (md, { lineEnding = EOF }) => {
+    const blocks = md.split(lineEnding + lineEnding);
     const processed = [];
 
     for (const block of blocks) {
