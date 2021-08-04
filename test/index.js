@@ -3,6 +3,18 @@ const { parse, getBlocks, parseParagraph, parseImage, parseCodeBlock,
 const { deepStrictEqual } = require('assert/strict');
 
 //
+// Main parse function
+//
+
+deepStrictEqual(parse(`
+
+# Lorem _ipsum_
+
+Dolor sit.
+
+Amet.`), '<h1>Lorem <em>ipsum</em></h1><p>Dolor sit.</p><p>Amet.</p>');
+
+//
 // Utility
 //
 

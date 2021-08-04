@@ -279,7 +279,7 @@ const parse = (md) => {
             // It's a heading
             html += parseHeading(block);
         } else {
-            html += parseParagraph(block);
+            html += parseParagraph(block).html;
         }
     }
 
