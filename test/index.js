@@ -1,4 +1,3 @@
-const path = require('path');
 const { parse, getBlocks, parseParagraph } = require('../src/');
 const { strictEqual, deepStrictEqual } = require('assert/strict');
 
@@ -13,11 +12,22 @@ b
 
 c`, { lineEnding: '\n' }), [ 'a', 'b', 'c' ]);
 
+//
+// Paragraphs
+//
+
 deepStrictEqual(parseParagraph('a'), '<p>a</p>');
 deepStrictEqual(parseParagraph('Lorem ipsum dolor'), '<p>Lorem ipsum dolor</p>');
+
+// Emphasis
 deepStrictEqual(parseParagraph('_a_'), '<p><em>a</em></p>');
 deepStrictEqual(parseParagraph('*a*'), '<p><em>a</em></p>');
 deepStrictEqual(parseParagraph('Lorem _ipsum_ dolor'), '<p>Lorem <em>ipsum</em> dolor</p>');
 deepStrictEqual(parseParagraph('__a__'), '<p><strong>a</strong></p>');
 deepStrictEqual(parseParagraph('**a**'), '<p><strong>a</strong></p>');
 deepStrictEqual(parseParagraph('Lorem __ipsum__ dolor'), '<p>Lorem <strong>ipsum</strong> dolor</p>');
+
+// Links
+deepStrictEqual(parseParagraph('[content](href)'), '<p><a href="href">content</a></p>');
+deepStrictEqual(parseParagraph('[Some link text](https://example.com)'), '<p><a href="https://example.com">Some link text</a></p>');
+deepStrictEqual(parseParagraph('Lorem [ipsum dolor](./a.b) sit amet'), '<p>Lorem <a href="./a.b">ipsum dolor</a> sit amet</p>');

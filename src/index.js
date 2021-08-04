@@ -30,14 +30,20 @@ const parseParagraph = exports.parseParagraph = (block) => {
         },
     };
 
-    let currentLink = {
+    let inLink = 0;
+    const currentLink = {
         content: '',
         href: '',
     };
 
     for (let i = 1; i <= block.length; i++) {
-        if (block[i - 1] === '*' || block[i - 1] === '_') {
-            if (block[i] === '*' || block[i] === '_') {
+        const cur = block[i - 1];
+        const next = block[i];
+
+        // Handle emphasis
+        if (cur === '*' || cur === '_') {
+            // Strong
+            if (next === '*' || next === '_') {
                 if (emphasis.current === 2) {
                     html += '</strong>';
                     emphasis.current = 0;
@@ -45,6 +51,7 @@ const parseParagraph = exports.parseParagraph = (block) => {
                     html += '<strong>';
                     emphasis.current = 2;
                 }
+            // Weak
             } else {
                 if (emphasis.current === 1) {
                     html += '</em>';
@@ -54,10 +61,34 @@ const parseParagraph = exports.parseParagraph = (block) => {
                     emphasis.current = 1;
                 }
             }
-        } else if (block[i - 1] === '[') {
-            
+        // Handle link begin
+        } else if (cur === '[') {
+            if (inLink === 0) {
+                inLink = 1;
+            }
+        // Handle link content
+        } else if (inLink === 1) {
+            if (cur === ']' && next === '(') {
+                inLink = 2;
+            } else {
+                currentLink.content += cur;
+            }
+        // Handle link href
+        } else if (inLink === 2) {
+            if (cur === '(') {
+                continue;
+            } else if (cur === ')') {
+                inLink = 0;
+
+                html += `<a href="${currentLink.href}">${currentLink.content}</a>`;
+
+                currentLink.content = '';
+                currentLink.href = '';
+            } else {
+                currentLink.href += cur;
+            }
         } else {
-            html += block[i - 1];
+            html += cur;
         }
     }
 
@@ -82,6 +113,10 @@ const parse = (md) => {
             // It's an unordered list
         } else if (Number.isInteger(+block.slice(0, block.indexOf('.')))) {
             // It's an ordered list
+        } else if (block[0] === '<') {
+            // It's an html block
+        } else if (block[0] === '#') {
+            // It's a heading
         } else {
             html += parseParagraph(block);
         }
