@@ -29,5 +29,12 @@ deepStrictEqual(parseParagraph('Lorem __ipsum__ dolor'), '<p>Lorem <strong>ipsum
 
 // Links
 deepStrictEqual(parseParagraph('[content](href)'), '<p><a href="href">content</a></p>');
-deepStrictEqual(parseParagraph('[Some link text](https://example.com)'), '<p><a href="https://example.com">Some link text</a></p>');
+deepStrictEqual(parseParagraph('[Some link text](https://example.com/a_b)'), '<p><a href="https://example.com/a_b">Some link text</a></p>');
 deepStrictEqual(parseParagraph('Lorem [ipsum dolor](./a.b) sit amet'), '<p>Lorem <a href="./a.b">ipsum dolor</a> sit amet</p>');
+
+// Inline code
+deepStrictEqual(parseParagraph('Lorem `ipsum` dolor'), '<p>Lorem <code>ipsum</code> dolor</p>');
+deepStrictEqual(parseParagraph('Lorem `[ipsum](a) _dolor_` sit amet'), '<p>Lorem <code>[ipsum](a) _dolor_</code> sit amet</p>');
+
+// Inline html
+deepStrictEqual(parseParagraph('Lorem <span class="a">ipsum</span> dolor'), '<p>Lorem <span class="a">ipsum</span> dolor</p>');

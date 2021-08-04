@@ -16,9 +16,15 @@ const getBlocks = exports.getBlocks = (md, { lineEnding = EOF }) => {
 };
 
 const parseParagraph = exports.parseParagraph = (block) => {
-    // Handle: emphasis, links, inline code and inline html
-
     let html = '<p>';
+
+    let inCode = false;
+
+    let inLink = 0;
+    const currentLink = {
+        content: '',
+        href: '',
+    };
 
     const emphasis = {
         _current: 0,
@@ -30,37 +36,23 @@ const parseParagraph = exports.parseParagraph = (block) => {
         },
     };
 
-    let inLink = 0;
-    const currentLink = {
-        content: '',
-        href: '',
-    };
-
     for (let i = 1; i <= block.length; i++) {
         const cur = block[i - 1];
         const next = block[i];
 
-        // Handle emphasis
-        if (cur === '*' || cur === '_') {
-            // Strong
-            if (next === '*' || next === '_') {
-                if (emphasis.current === 2) {
-                    html += '</strong>';
-                    emphasis.current = 0;
-                } else {
-                    html += '<strong>';
-                    emphasis.current = 2;
-                }
-            // Weak
+        // Handle inline code
+        if (cur === '`') {
+            if (inCode) {
+                inCode = false;
+
+                html += '</code>';
             } else {
-                if (emphasis.current === 1) {
-                    html += '</em>';
-                    emphasis.current = 0;
-                } else if (emphasis.current !== 2 && emphasis.last !== 2) {
-                    html += '<em>';
-                    emphasis.current = 1;
-                }
+                inCode = true;
+
+                html += '<code>';
             }
+        } else if (inCode) {
+            html += cur;
         // Handle link begin
         } else if (cur === '[') {
             if (inLink === 0) {
@@ -86,6 +78,27 @@ const parseParagraph = exports.parseParagraph = (block) => {
                 currentLink.href = '';
             } else {
                 currentLink.href += cur;
+            }
+        // Handle emphasis
+        } else if (cur === '*' || cur === '_') {
+            // Strong
+            if (next === '*' || next === '_') {
+                if (emphasis.current === 2) {
+                    html += '</strong>';
+                    emphasis.current = 0;
+                } else {
+                    html += '<strong>';
+                    emphasis.current = 2;
+                }
+            // Weak
+            } else {
+                if (emphasis.current === 1) {
+                    html += '</em>';
+                    emphasis.current = 0;
+                } else if (emphasis.current !== 2 && emphasis.last !== 2) {
+                    html += '<em>';
+                    emphasis.current = 1;
+                }
             }
         } else {
             html += cur;
