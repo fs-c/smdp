@@ -1,13 +1,11 @@
-const { getBlocks, parseParagraph, parseImage, parseCodeBlock } = require('../src/');
+const { parse, getBlocks, parseParagraph, parseImage, parseCodeBlock,
+    parseSemanticBreak, parseBlockQuote, parseList, parseHeading } = require('../src/');
 const { deepStrictEqual } = require('assert/strict');
 
 //
 // Utility
 //
 
-// Apparently \r\n automatically gets converted to \n internally, so force
-// parser to use it even on Windows
-// (The file contains CRLF on Windows, but looking at the string in JS shows \n.)
 deepStrictEqual(getBlocks(`
 
 a
@@ -15,7 +13,7 @@ a
 b
 
 
-c`, { lineEnding: '\n' }), [ 'a', 'b', 'c' ]);
+c`), [ 'a', 'b', 'c' ]);
 
 //
 // Paragraphs
@@ -75,3 +73,59 @@ Lorem _ipsum_
 `<pre><code>Lorem _ipsum_
  <Dolor></Dolor>
   Sit amet</code></pre>`);
+
+//
+// Semantic breaks
+//
+
+deepStrictEqual(parseSemanticBreak('---'), '<hr>');
+
+//
+// Block quotes
+//
+
+deepStrictEqual(parseBlockQuote([ '>Lorem' ]), '<blockquote><p>Lorem</p></blockquote>');
+deepStrictEqual(parseBlockQuote([ '>__Lorem__ [ipsum](href)' ]),
+    '<blockquote><p><strong>Lorem</strong> <a href="href">ipsum</a></p></blockquote>');
+deepStrictEqual(parseBlockQuote([ '>Lorem', '>__ipsum__', '>dolor' ]),
+    '<blockquote><p>Lorem</p><p><strong>ipsum</strong></p><p>dolor</p></blockquote>');
+deepStrictEqual(parse(
+`>Lorem
+
+>[Ipsum](href)
+
+>__Dolor__`
+), '<blockquote><p>Lorem</p><p><a href="href">Ipsum</a></p><p><strong>Dolor</strong></p></blockquote>');
+
+//
+// Lists
+//
+
+deepStrictEqual(parseList(`- Lorem`, false), '<ul><li>Lorem</li></ul>');
+deepStrictEqual(parseList(`- [__Lorem__](ipsum)`, false),
+    '<ul><li><a href="ipsum"><strong>Lorem</strong></a></li></ul>');
+deepStrictEqual(parseList(
+`- Lorem
+- Ipsum
+- Dolor`, false
+), '<ul><li>Lorem</li><li>Ipsum</li><li>Dolor</li></ul>');
+
+deepStrictEqual(parseList(`1. Lorem`, true), '<ol><li>Lorem</li></ol>');
+deepStrictEqual(parseList(`1. [__Lorem__](ipsum)`, true),
+    '<ol><li><a href="ipsum"><strong>Lorem</strong></a></li></ol>');
+deepStrictEqual(parseList(
+`1. Lorem
+2. Ipsum
+3. Dolor`, true
+), '<ol><li>Lorem</li><li>Ipsum</li><li>Dolor</li></ol>');
+
+//
+// Headings
+//
+
+deepStrictEqual(parseHeading('# Lorem'), '<h1>Lorem</h1>');
+deepStrictEqual(parseHeading('## Ipsum'), '<h2>Ipsum</h2>');
+deepStrictEqual(parseHeading('### Dolor sit amet'), '<h3>Dolor sit amet</h3>');
+
+deepStrictEqual(parseHeading('# _Lorem_ [ipsum](dolor) `sit` amet'),
+    '<h1><em>Lorem</em> <a href="dolor">ipsum</a> <code>sit</code> amet</h1>');

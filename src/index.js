@@ -1,15 +1,21 @@
 const { EOF } = require('os');
 
-const getBlocks = exports.getBlocks = (md, { lineEnding = EOF }) => {
-    const blocks = md.split(lineEnding + lineEnding);
+const getBlocks = exports.getBlocks = (md) => {
+    const blocks = md.split('\n');
     const processed = [];
 
     for (const block of blocks) {
-        if (!block || !block.length) {
+        if (!block) {
             continue;
         }
 
-        processed.push(block.trim());
+        const trimmed = block.trim();
+
+        if (!trimmed.length) {
+            continue;
+        }
+
+        processed.push(trimmed);
     }
 
     return processed;
@@ -168,19 +174,76 @@ const parseImage = exports.parseImage = (block) => {
 
     label = parseParagraph(label, { inline: true }).html;
 
-    return `<figure role="img"><img src="${source.slice(1, -1)}" alt="${label}"><figcaption>${label}</figcaption></figure>`
+    return `<figure role="img"><img src="${source.slice(1, -1)}" alt="${label}">`
+        + `<figcaption>${label}</figcaption></figure>`
 };
 
 const parseCodeBlock = exports.parseCodeBlock = (block) => {
     return '<pre><code>' + block.slice(4, -4) + '</code></pre>';
 };
 
+const parseSemanticBreak = exports.parseSemanticBreak = (block) => {
+    return '<hr>';
+};
+
+const parseBlockQuote = exports.parseBlockQuote = (blocks) => {
+    const parsed = blocks.map((b) => parseParagraph(b.slice(1)).html);
+
+    return '<blockquote>' + parsed.join('') + '</blockquote>';
+};
+
+const isOrderedListItem = (string) => {
+    for (let i = 0; i < string.length; i++) {
+        if (Number.isInteger(+string[i])) {
+            if (string[i + 1] === '.') {
+                return true;
+            }
+
+            continue;
+        }
+
+        return false;
+    }
+};
+
+const parseList = exports.parseList = (block, ordered) => {
+    let html = ordered ? '<ol>' : '<ul>';
+
+    // Not terribly efficient but I don't use lists often so it's fine
+    block.split('\n').forEach((b, i) => {
+        const text = b.trim().slice(b.indexOf(' ') + 1);
+
+        html += '<li>' + parseParagraph(text, { inline: true }).html + '</li>';
+    });
+
+    return html + (ordered ? '</ol>' : '</ul>');
+};
+
+const parseHeading = exports.parseHeading = (block) => {
+    let level = 0;
+    
+    // No one should ever use more than 3 levels of headings
+    for (let i = 0; i < 3; i++) {
+        if (block[i] === '#') {
+            level += 1;
+        } else {
+            break;
+        }
+    }
+
+    const content = block.slice(level + 1);
+
+    return `<h${level}>` + parseParagraph(content, { inline: true }).html + `</h${level}>`;
+}
+
 const parse = (md) => {
     const blocks = getBlocks(md);
 
     let html = '';
 
-    for (const block of blocks) {
+    for (let i = 0; i < blocks.length; i++) {
+        const block = blocks[i];
+
         if (block[0] === '!') {
             // It's an image
             html += parseImage(block);
@@ -189,18 +252,32 @@ const parse = (md) => {
             html += parseCodeBlock(block);
         } else if (block.startsWith('---')) {
             // It's a semantic break
-            html += '<br>';
+            html += parseSemanticBreak(block);
         } else if (block[0] === '>') {
             // It's a blockquote
+            const quoteBlocks = [ block ];
+
+            for (let j = i + 1; j < blocks.length; j++, i++) {
+                if (blocks[j][0] === '>') {
+                    quoteBlocks.push(blocks[j]);
+                } else {
+                    break;
+                }
+            }
+
+            html += parseBlockQuote(quoteBlocks);
         } else if (block[0] === '-') {
             // It's an unordered list
-        } else if (Number.isInteger(+block.slice(0, block.indexOf('.')))) {
+            html += parseList(block, false);
+        } else if (isOrderedListItem(block)) {
             // It's an ordered list
+            html += parseList(block, true);
         } else if (block[0] === '<') {
             // It's an html block
             html += block;
         } else if (block[0] === '#') {
             // It's a heading
+            html += parseHeading(block);
         } else {
             html += parseParagraph(block);
         }
