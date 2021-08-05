@@ -3,18 +3,6 @@ const { parse, getBlocks, parseParagraph, parseImage, parseCodeBlock,
 const { deepStrictEqual } = require('assert/strict');
 
 //
-// Main parse function
-//
-
-deepStrictEqual(parse(`
-
-# Lorem _ipsum_
-
-Dolor sit.
-
-Amet.`), '<h1>Lorem <em>ipsum</em></h1><p>Dolor sit.</p><p>Amet.</p>');
-
-//
 // Utility
 //
 
@@ -26,6 +14,51 @@ b
 
 
 c`), [ 'a', 'b', 'c' ]);
+
+deepStrictEqual(getBlocks(`a
+b
+
+c
+
+d`), [ 'a\nb', 'c', 'd' ]);
+
+// Special case: Code blocks
+deepStrictEqual(getBlocks(`a
+
+\`\`\`a
+lorem
+
+ipsum
+\`\`\`
+
+c`), [ 'a', `\`\`\`a
+lorem
+
+ipsum
+\`\`\``, 'c' ]);
+
+// Special case: Block quotes
+deepStrictEqual(getBlocks(`a
+
+>Lorem
+
+>Ipsum
+
+>Dolor
+
+b`), [ 'a', '>Lorem\n\n>Ipsum\n\n>Dolor', 'b' ])
+
+//
+// Main parse function
+//
+
+deepStrictEqual(parse(`
+
+# Lorem _ipsum_
+
+Dolor sit.
+
+Amet.`), '<h1>Lorem <em>ipsum</em></h1><p>Dolor sit.</p><p>Amet.</p>');
 
 //
 // Paragraphs
@@ -59,6 +92,18 @@ deepStrictEqual(parseParagraph('Lorem <span class="a">_ipsum_</span> dolor').htm
 deepStrictEqual(parseParagraph('Lorem <span class="a">_ipsum_ <span>sit</span></span> dolor').html,
     '<p>Lorem <span class="a">_ipsum_ <span>sit</span></span> dolor</p>');
 
+// Line breaks
+deepStrictEqual(parseParagraph(`Lorem
+ipsum
+dolor`).html, '<p>Lorem<br>ipsum<br>dolor</p>')
+
+// With the parse function
+deepStrictEqual(parse(`Lorem
+
+[\`Ipsum\`](Dolor)
+
+_Sit_ __Amet__`), `<p>Lorem</p><p><a href="Dolor"><code>Ipsum</code></a></p><p><em>Sit</em> <strong>Amet</strong></p>`);
+
 //
 // Images
 //
@@ -67,6 +112,13 @@ deepStrictEqual(parseImage('![label](image)'), '<figure role="img"><img src="ima
 deepStrictEqual(parseImage('![Lorem _ipsum_ dolor](https://a.b/c_d)'),
     '<figure role="img"><img src="https://a.b/c_d" alt="Lorem <em>ipsum</em> dolor"><figcaption>Lorem <em>ipsum</em> dolor</figcaption></figure>');
 
+// With the parse function
+deepStrictEqual(parse(`Lorem
+
+![_Ipsum_](Dolor)
+
+Dolor`), `<p>Lorem</p><figure role="img"><img src="Dolor" alt="<em>Ipsum</em>"><figcaption><em>Ipsum</em></figcaption></figure><p>Dolor</p>`)
+
 //
 // Code blocks
 //
@@ -74,7 +126,7 @@ deepStrictEqual(parseImage('![Lorem _ipsum_ dolor](https://a.b/c_d)'),
 deepStrictEqual(parseCodeBlock(
 `\`\`\`
 Lorem ipsum
-\`\`\``), '<pre><code>Lorem ipsum</code></pre>');
+\`\`\``), '<pre><code class="language-plaintext">Lorem ipsum</code></pre>');
 
 deepStrictEqual(parseCodeBlock(
 `\`\`\`
@@ -82,17 +134,17 @@ Lorem _ipsum_
  <Dolor></Dolor>
   Sit amet
 \`\`\``),
-`<pre><code>Lorem _ipsum_
+`<pre><code class="language-plaintext">Lorem _ipsum_
  <Dolor></Dolor>
   Sit amet</code></pre>`);
 
 deepStrictEqual(parseCodeBlock(
-`\`\`\`d
+`\`\`\`D
 Lorem ipsum
 \`\`\``), '<pre><code class="language-d">Lorem ipsum</code></pre>');
 
 deepStrictEqual(parseCodeBlock(
-`\`\`\`dolor
+`\`\`\`doloR
 Lorem _ipsum_
  <Dolor></Dolor>
   Sit amet
@@ -100,6 +152,21 @@ Lorem _ipsum_
 `<pre><code class="language-dolor">Lorem _ipsum_
  <Dolor></Dolor>
   Sit amet</code></pre>`);
+
+// With the parse function
+deepStrictEqual(parse(`Lorem
+
+\`\`\`Ipsum
+Dolor
+Sit
+
+Amet
+\`\`\`
+
+Consectur`), `<p>Lorem</p><pre><code class="language-ipsum">Dolor
+Sit
+
+Amet</code></pre><p>Consectur</p>`);
 
 //
 // Semantic breaks
@@ -111,11 +178,15 @@ deepStrictEqual(parseSemanticBreak('---'), '<hr>');
 // Block quotes
 //
 
-deepStrictEqual(parseBlockQuote([ '>Lorem' ]), '<blockquote><p>Lorem</p></blockquote>');
-deepStrictEqual(parseBlockQuote([ '>__Lorem__ [ipsum](href)' ]),
+deepStrictEqual(parseBlockQuote('>Lorem'), '<blockquote><p>Lorem</p></blockquote>');
+deepStrictEqual(parseBlockQuote('>__Lorem__ [ipsum](href)'),
     '<blockquote><p><strong>Lorem</strong> <a href="href">ipsum</a></p></blockquote>');
-deepStrictEqual(parseBlockQuote([ '>Lorem', '>__ipsum__', '>dolor' ]),
-    '<blockquote><p>Lorem</p><p><strong>ipsum</strong></p><p>dolor</p></blockquote>');
+deepStrictEqual(parseBlockQuote(`>Lorem
+
+>__Ipsum__
+
+>Dolor`),
+    '<blockquote><p>Lorem</p><p><strong>Ipsum</strong></p><p>Dolor</p></blockquote>');
 deepStrictEqual(parse(
 `>Lorem
 

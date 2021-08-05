@@ -1,12 +1,54 @@
-const { EOF } = require('os');
-
 const getBlocks = exports.getBlocks = (md) => {
-    const blocks = md.split('\n');
+    const blocks = [ '' ];
+
+    let blockIdx = 0;
+    for (let i = 0; i < md.length; i++) {
+        if (md[i] === '\r' && md[i + 1] === '\n' && md[i + 2] === '\r' && md[i + 3] === '\n') {
+            blockIdx += 1;
+            i += 3;
+
+            blocks[blockIdx] = '';
+        } else if (md[i] === '\n' && md[i + 1] === '\n') {
+            blockIdx += 1;
+            i += 1;
+
+            blocks[blockIdx] = '';
+        } else {
+            blocks[blockIdx] += md[i];
+        }
+    }
+
+    // At this point every block implies two line breaks afterwards (so empty blocks
+    // imply extra line breaks betweem regular blocks)
+
     const processed = [];
 
-    for (const block of blocks) {
-        if (!block) {
+    for (let i = 0; i < blocks.length; i++) {
+        let block = blocks[i];
+
+        if (block === undefined) {
             continue;
+        }
+
+        if (block.startsWith('```')) {
+            for (i += 1; i < blocks.length; i++) {
+                block += '\n\n' + blocks[i];
+
+                if (blocks[i].endsWith('```')) {
+                    break;
+                }
+            }
+        } else if (block.startsWith('>')) {
+            for (i += 1; i < blocks.length; i++) {
+                if (blocks[i].startsWith('>')) {
+                    block += '\n\n' + blocks[i];
+                } else {
+                    // Went one too far
+                    i -= 1;
+
+                    break;
+                }
+            }
         }
 
         const trimmed = block.trim();
@@ -91,6 +133,8 @@ const parseParagraph = exports.parseParagraph = (block, { inline = false, index 
 
             html += processed;
             i = j - 1;
+        } else if (cur === '\n') {
+            html += '<br>';
         // Handle link begin
         } else if (cur === '[') {
             if (inLink === 0) {
@@ -181,23 +225,22 @@ const parseImage = exports.parseImage = (block) => {
 const parseCodeBlock = exports.parseCodeBlock = (block) => {
     const firstBreak = block.indexOf('\n');
     const lastBreak = block.lastIndexOf('\n');
-    const language = block.slice(3, firstBreak).trim();
 
-    const actualBlock = block.slice(firstBreak + 1,
-        block[lastBreak - 1] === '\r' ? lastBreak - 1 : lastBreak);
+    const language = block.slice(3, firstBreak).toLowerCase()
+        || 'plaintext';
 
-    return `<pre><code${language ? ' class="language-' + language + '"' : ''}>`
-        + actualBlock + '</code></pre>';
+    return `<pre><code class="language-${language}">${block.slice(firstBreak + 1, lastBreak)}</code></pre>`;
 };
 
 const parseSemanticBreak = exports.parseSemanticBreak = (block) => {
     return '<hr>';
 };
 
-const parseBlockQuote = exports.parseBlockQuote = (blocks) => {
-    const parsed = blocks.map((b) => parseParagraph(b.slice(1)).html);
+const parseBlockQuote = exports.parseBlockQuote = (block) => {
+    const content = block.split('\n').filter((b) => b.length)
+        .map((b) => parseParagraph(b.slice(1)).html).join('');
 
-    return '<blockquote>' + parsed.join('') + '</blockquote>';
+    return '<blockquote>' + content + '</blockquote>';
 };
 
 const isOrderedListItem = (string) => {
@@ -244,6 +287,10 @@ const parseHeading = exports.parseHeading = (block) => {
     return `<h${level}>` + inline.html + `</h${level}>`;
 }
 
+const handleBlock = exports.handleBlock = (block) => {
+
+};
+
 const parse = (md) => {
     const blocks = getBlocks(md);
 
@@ -262,18 +309,7 @@ const parse = (md) => {
             // It's a semantic break
             html += parseSemanticBreak(block);
         } else if (block[0] === '>') {
-            // It's a blockquote
-            const quoteBlocks = [ block ];
-
-            for (let j = i + 1; j < blocks.length; j++, i++) {
-                if (blocks[j][0] === '>') {
-                    quoteBlocks.push(blocks[j]);
-                } else {
-                    break;
-                }
-            }
-
-            html += parseBlockQuote(quoteBlocks);
+            html += parseBlockQuote(block);
         } else if (block[0] === '-') {
             // It's an unordered list
             html += parseList(block, false);
