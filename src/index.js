@@ -30,7 +30,7 @@ const getBlocks = exports.getBlocks = (md) => {
             continue;
         }
 
-        if (block.startsWith('```')) {
+        if (block.startsWith('```') && !block.endsWith('```')) {
             for (i += 1; i < blocks.length; i++) {
                 block += '\n\n' + blocks[i];
 
