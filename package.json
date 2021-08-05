@@ -1,12 +1,15 @@
 {
-  "name": "smdp",
+  "name": "@fsoc/smdp",
   "version": "0.1.0",
-  "description": "",
+  "description": "A simple markdown parser.",
   "main": "src/index.js",
   "scripts": {
     "test": "node test/index.js"
   },
-  "keywords": [],
+  "keywords": [ "markdown", "parser" ],
+  "homepage": "https://github.com/fs-c/smdp",
+  "bugs": "https://github.com/fs-c/smdp/issues",
+  "repository": "github:fs-c/smdp",
   "author": "fs-c",
   "license": "MIT"
 }
