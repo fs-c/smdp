@@ -179,7 +179,15 @@ const parseImage = exports.parseImage = (block) => {
 };
 
 const parseCodeBlock = exports.parseCodeBlock = (block) => {
-    return '<pre><code>' + block.slice(4, -4) + '</code></pre>';
+    const firstBreak = block.indexOf('\n');
+    const lastBreak = block.lastIndexOf('\n');
+    const language = block.slice(3, firstBreak).trim();
+
+    const actualBlock = block.slice(firstBreak + 1,
+        block[lastBreak - 1] === '\r' ? lastBreak - 1 : lastBreak);
+
+    return `<pre><code${language ? ' class="language-' + language + '"' : ''}>`
+        + actualBlock + '</code></pre>';
 };
 
 const parseSemanticBreak = exports.parseSemanticBreak = (block) => {
@@ -231,9 +239,9 @@ const parseHeading = exports.parseHeading = (block) => {
         }
     }
 
-    const content = block.slice(level + 1);
+    const inline = parseParagraph(block.slice(level + 1),{ inline: true });
 
-    return `<h${level}>` + parseParagraph(content, { inline: true }).html + `</h${level}>`;
+    return `<h${level}>` + inline.html + `</h${level}>`;
 }
 
 const parse = (md) => {

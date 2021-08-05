@@ -86,6 +86,21 @@ Lorem _ipsum_
  <Dolor></Dolor>
   Sit amet</code></pre>`);
 
+deepStrictEqual(parseCodeBlock(
+`\`\`\`d
+Lorem ipsum
+\`\`\``), '<pre><code class="language-d">Lorem ipsum</code></pre>');
+
+deepStrictEqual(parseCodeBlock(
+`\`\`\`dolor
+Lorem _ipsum_
+ <Dolor></Dolor>
+  Sit amet
+\`\`\``),
+`<pre><code class="language-dolor">Lorem _ipsum_
+ <Dolor></Dolor>
+  Sit amet</code></pre>`);
+
 //
 // Semantic breaks
 //
