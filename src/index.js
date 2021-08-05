@@ -228,8 +228,9 @@ const parseCodeBlock = exports.parseCodeBlock = (block) => {
 
     const language = block.slice(3, firstBreak).toLowerCase()
         || 'plaintext';
+    const content = block.slice(firstBreak + 1, lastBreak);
 
-    return `<pre><code class="language-${language}">${block.slice(firstBreak + 1, lastBreak)}</code></pre>`;
+    return `<pre><code class="language-${language}">${content}</code></pre>`;
 };
 
 const parseSemanticBreak = exports.parseSemanticBreak = (block) => {
@@ -287,8 +288,34 @@ const parseHeading = exports.parseHeading = (block) => {
     return `<h${level}>` + inline.html + `</h${level}>`;
 }
 
-const handleBlock = exports.handleBlock = (block) => {
-
+const parseBlock = exports.parseBlock = (block) => {
+    if (block[0] === '!') {
+        // It's an image
+        return parseImage(block);
+    } else if (block.startsWith('```')) {
+        // It's a code block
+        return parseCodeBlock(block);
+    } else if (block.startsWith('---')) {
+        // It's a semantic break
+        return parseSemanticBreak(block);
+    } else if (block[0] === '>') {
+        return parseBlockQuote(block);
+    } else if (block[0] === '-') {
+        // It's an unordered list
+        return parseList(block, false);
+    } else if (isOrderedListItem(block)) {
+        // It's an ordered list
+        return parseList(block, true);
+    } else if (block[0] === '<') {
+        // It's an html block
+        return block;
+    } else if (block[0] === '#') {
+        // It's a heading
+        return parseHeading(block);
+    } else {
+        // It's a paragraph
+        return parseParagraph(block).html;
+    }
 };
 
 const parse = (md) => {
@@ -297,34 +324,7 @@ const parse = (md) => {
     let html = '';
 
     for (let i = 0; i < blocks.length; i++) {
-        const block = blocks[i];
-
-        if (block[0] === '!') {
-            // It's an image
-            html += parseImage(block);
-        } else if (block.startsWith('```')) {
-            // It's a code block
-            html += parseCodeBlock(block);
-        } else if (block.startsWith('---')) {
-            // It's a semantic break
-            html += parseSemanticBreak(block);
-        } else if (block[0] === '>') {
-            html += parseBlockQuote(block);
-        } else if (block[0] === '-') {
-            // It's an unordered list
-            html += parseList(block, false);
-        } else if (isOrderedListItem(block)) {
-            // It's an ordered list
-            html += parseList(block, true);
-        } else if (block[0] === '<') {
-            // It's an html block
-            html += block;
-        } else if (block[0] === '#') {
-            // It's a heading
-            html += parseHeading(block);
-        } else {
-            html += parseParagraph(block).html;
-        }
+        html += parseBlock(blocks[i]);
     }
 
     return html;
