@@ -1,66 +1,81 @@
 const getBlocks = exports.getBlocks = (md) => {
-    const blocks = [ '' ];
+    const getRawBlocks = (md) => {
+        const blocks = [ '' ];
 
-    let blockIdx = 0;
-    for (let i = 0; i < md.length; i++) {
-        if (md[i] === '\r' && md[i + 1] === '\n' && md[i + 2] === '\r' && md[i + 3] === '\n') {
-            blockIdx += 1;
-            i += 3;
+        let currentBlock = 0;
+        for (let i = 0; i < md.length; i++) {
+            // If there are two \r\n style linebreaks or if there are two \n style ones,
+            // initialize a new block and make it the current one
+            // Otherwise add to the current block
+            if (md[i] === '\r' && md[i + 1] === '\n' && md[i + 2] === '\r' && md[i + 3] === '\n') {
+                currentBlock += 1;
+                i += 3;
 
-            blocks[blockIdx] = '';
-        } else if (md[i] === '\n' && md[i + 1] === '\n') {
-            blockIdx += 1;
-            i += 1;
+                blocks[currentBlock] = '';
+            } else if (md[i] === '\n' && md[i + 1] === '\n') {
+                currentBlock += 1;
+                i += 1;
 
-            blocks[blockIdx] = '';
-        } else {
-            blocks[blockIdx] += md[i];
-        }
-    }
-
-    // At this point every block implies two line breaks afterwards (so empty blocks
-    // imply extra line breaks betweem regular blocks)
-
-    const processed = [];
-
-    for (let i = 0; i < blocks.length; i++) {
-        let block = blocks[i];
-
-        if (block === undefined) {
-            continue;
-        }
-
-        if (block.startsWith('```') && !block.endsWith('```')) {
-            for (i += 1; i < blocks.length; i++) {
-                block += '\n\n' + blocks[i];
-
-                if (blocks[i].endsWith('```')) {
-                    break;
-                }
+                blocks[currentBlock] = '';
+            } else {
+                blocks[currentBlock] += md[i];
             }
-        } else if (block.startsWith('>')) {
-            for (i += 1; i < blocks.length; i++) {
-                if (blocks[i].startsWith('>')) {
+        }
+
+        // At this point every block implies two line breaks afterwards (so empty blocks
+        // imply extra line breaks betweem regular blocks)
+        return blocks;
+    };
+
+    const consolidateBlocks = (blocks) => {
+        const processed = [];
+
+        for (let i = 0; i < blocks.length; i++) {
+            let block = blocks[i];
+
+            // Skip empty blocks (ie extra linebreaks in the markdown)
+            if (block === undefined) {
+                continue;
+            }
+
+            // Handle blocks which should include following blocks (code and quotes
+            // might have multiple linebreaks but should still be one block)
+            if (block.startsWith('```') && !block.endsWith('```')) {
+                for (i += 1; i < blocks.length; i++) {
                     block += '\n\n' + blocks[i];
-                } else {
-                    // Went one too far
-                    i -= 1;
 
-                    break;
+                    if (blocks[i].endsWith('```')) {
+                        break;
+                    }
+                }
+            } else if (block.startsWith('>')) {
+                for (i += 1; i < blocks.length; i++) {
+                    if (blocks[i].startsWith('>')) {
+                        block += '\n\n' + blocks[i];
+                    } else {
+                        // Current block doesn't start with a '>' so we should treat
+                        // it like a normal block
+                        i -= 1;
+
+                        break;
+                    }
                 }
             }
+
+            const trimmed = block.trim();
+
+            // Skip blocks which contain only whitespace
+            if (!trimmed.length) {
+                continue;
+            }
+
+            processed.push(trimmed);
         }
 
-        const trimmed = block.trim();
+        return processed;
+    };
 
-        if (!trimmed.length) {
-            continue;
-        }
-
-        processed.push(trimmed);
-    }
-
-    return processed;
+    return consolidateBlocks(getRawBlocks(md));
 };
 
 const parseParagraph = exports.parseParagraph = (block, { inline = false, index = 1 } = {}) => {
@@ -237,7 +252,7 @@ const parseCodeBlock = exports.parseCodeBlock = (block) => {
     return `<pre><code class="language-${language}">${content}</code></pre>`;
 };
 
-const parseSemanticBreak = exports.parseSemanticBreak = (block) => {
+const parseSemanticBreak = exports.parseSemanticBreak = () => {
     return '<hr>';
 };
 
@@ -287,7 +302,7 @@ const parseHeading = exports.parseHeading = (block) => {
         }
     }
 
-    const inline = parseParagraph(block.slice(level + 1),{ inline: true });
+    const inline = parseParagraph(block.slice(level + 1), { inline: true });
 
     return `<h${level}>` + inline.html + `</h${level}>`;
 }
