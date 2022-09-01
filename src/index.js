@@ -186,6 +186,10 @@ const parseParagraph = exports.parseParagraph = (block, { inline = false, index 
                     emphasis.current = 1;
                 }
             }
+        } else if (cur === '-' && next === '-') {
+            html += '&mdash;';
+
+            i++;
         } else {
             html += cur;
         }
