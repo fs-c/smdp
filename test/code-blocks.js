@@ -13,7 +13,7 @@ Lorem _ipsum_
   Sit amet
 \`\`\``),
 `<pre><code class="language-plaintext">Lorem _ipsum_
- <Dolor></Dolor>
+ &lt;Dolor&gt;&lt;/Dolor&gt;
   Sit amet</code></pre>`);
 
 deepStrictEqual(parseCodeBlock(
@@ -28,7 +28,7 @@ Lorem _ipsum_
   Sit amet
 \`\`\``),
 `<pre><code class="language-dolor">Lorem _ipsum_
- <Dolor></Dolor>
+ &lt;Dolor&gt;&lt;/Dolor&gt;
   Sit amet</code></pre>`);
 
 // With the parse function
@@ -36,13 +36,13 @@ deepStrictEqual(parse(`Lorem
 
 \`\`\`Ipsum
     Dolor
-        Sit
+        <Sit />
 
 Amet
 \`\`\`
 
 Consectur`), `<p>Lorem</p><pre><code class="language-ipsum">    Dolor
-        Sit
+        &lt;Sit /&gt;
 
 Amet</code></pre><p>Consectur</p>`);
 
