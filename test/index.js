@@ -107,3 +107,23 @@ Consecitur`), '<h1>Level 1</h1><p>Lorem ipsum</p><h2>Level 2</h2><p>Dolor sit am
 
 deepStrictEqual(parseSemanticBreak('---'), '<hr>');
 
+//
+// Big inline HTML
+// (as opposed to a <span> or something, that's covered in the paragraph tests)
+//
+
+deepStrictEqual(parse(`Lorem
+
+<script type="text/javascript">
+    const variable = 3;
+
+    console.log(variable);
+</script>
+
+Ipsum
+`), `<p>Lorem</p><script type="text/javascript">
+    const variable = 3;
+
+    console.log(variable);
+</script><p>Ipsum</p>`);
+

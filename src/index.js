@@ -38,8 +38,9 @@ const getBlocks = exports.getBlocks = (md) => {
                 continue;
             }
 
-            // Handle blocks which should include following blocks (code and quotes
-            // might have multiple linebreaks but should still be one block)
+            // Handle blocks which should include following blocks (code, quotes
+            // and inline HTML might have multiple linebreaks but should still 
+            // be one block)
             if (block.startsWith('```') && !block.endsWith('```')) {
                 for (i += 1; i < blocks.length; i++) {
                     block += '\n\n' + blocks[i];
@@ -57,6 +58,24 @@ const getBlocks = exports.getBlocks = (md) => {
                         // it like a normal block
                         i -= 1;
 
+                        break;
+                    }
+                }
+            } else if (block.startsWith('<')) {
+                // This attempts to handle large inline HTML blocks.  This is a 
+                // very sloppy solution because something like <p><p></p></p> 
+                // would break it. For my use case (script tag with JS inside)
+                // it works fine, anything more complex will likely require a more
+                // sophisticated solution. 
+
+                const firstSpace = block.indexOf(' ');
+                const firstClosingTag = block.indexOf('>');
+                const name = block.slice(1, Math.min(firstSpace, firstClosingTag))
+
+                for (i += 1; i < blocks.length; i++) {
+                    block += '\n\n' + blocks[i];
+
+                    if (block.endsWith(name + '>')) {
                         break;
                     }
                 }
