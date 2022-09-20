@@ -22,7 +22,8 @@ deepStrictEqual(parseParagraph('Lorem [ipsum `dolor`](./a.b) sit amet').html, '<
 // Inline code
 deepStrictEqual(parseParagraph('Lorem `ipsum` dolor').html, '<p>Lorem <code>ipsum</code> dolor</p>');
 deepStrictEqual(parseParagraph('Lorem `[ipsum](a) _dolor_` sit amet').html, '<p>Lorem <code>[ipsum](a) _dolor_</code> sit amet</p>');
-deepStrictEqual(parseParagraph('Lorem `<ipsum` `_dolor`').html, '<p>Lorem <code><ipsum</code> <code>_dolor</code></p>');
+deepStrictEqual(parseParagraph('Lorem `<ipsum` `_dolor`').html, '<p>Lorem <code>&lt;ipsum</code> <code>_dolor</code></p>');
+deepStrictEqual(parseParagraph('Lorem `<>ipsum</> <dolor /> <sit>amet</sit>`').html, '<p>Lorem <code>&lt;&gt;ipsum&lt;/&gt; &lt;dolor /&gt; &lt;sit&gt;amet&lt;/sit&gt;</code></p>');
 
 // Inline html
 deepStrictEqual(parseParagraph('Lorem <span class="a">ipsum</span> dolor').html, '<p>Lorem <span class="a">ipsum</span> dolor</p>');

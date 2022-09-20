@@ -97,6 +97,18 @@ const getBlocks = exports.getBlocks = (md) => {
     return consolidateBlocks(getRawBlocks(md));
 };
 
+const escapeHTMLCharacter = (char) => {
+    if (char === '<') {
+        return '&lt;';
+    } else if (char === '>') {
+        return '&gt;';
+    } else if (char === '&') {
+        return '&amp;';
+    } else {
+        return char;
+    }
+};
+
 const parseParagraph = exports.parseParagraph = (block, { inline = false, index = 1 } = {}) => {
     let html = inline ? '' : '<p>';
 
@@ -135,7 +147,11 @@ const parseParagraph = exports.parseParagraph = (block, { inline = false, index 
                 html += '<code>';
             }
         } else if (inCode) {
-            html += cur;
+            // The contents of <code> tags are still interpreted as HTML, so we 
+            // need to escape special characters
+            // I really hate calling a function for every code character but 
+            // the functionality is needed in other places as well 
+            html += escapeHTMLCharacter(cur);
         // Handle inline html
         } else if (cur === '<') {
             // Considering how rare it usually is, inline html is disproportionally 
@@ -261,14 +277,29 @@ const parseImage = exports.parseImage = (block) => {
 };
 
 const parseCodeBlock = exports.parseCodeBlock = (block) => {
-    const firstBreak = block.indexOf('\n');
-    const lastBreak = block.lastIndexOf('\n');
+    let content = '';
+    let language = '';
+    let inContent = false;
 
-    const language = block.slice(3, firstBreak).toLowerCase()
-        || 'plaintext';
-    const content = block.slice(firstBreak + 1, lastBreak);
+    for (let i = 0; i < block.length; i++) {
+        const cur = block[i];
 
-    return `<pre><code class="language-${language}">${content}</code></pre>`;
+        if (!inContent && cur === '\n') {
+            // we just got done with the language part, start actually
+            // handling the block but skip the newline
+            inContent = true;
+        } else if (!inContent && cur !== '`') {
+            // we're in the language part
+            language += cur.toLowerCase();
+        } else if (inContent && cur === '\n' && i >= block.length - 4) {
+            // we're at the last newline
+            inContent = false;
+        } else if (inContent) {
+            content += escapeHTMLCharacter(cur);
+        }
+    }
+
+    return `<pre><code class="language-${language || 'plaintext'}">${content}</code></pre>`;
 };
 
 const parseSemanticBreak = exports.parseSemanticBreak = () => {
