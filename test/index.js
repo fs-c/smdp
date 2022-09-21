@@ -127,3 +127,12 @@ Ipsum
     console.log(variable);
 </script><p>Ipsum</p>`);
 
+deepStrictEqual(parse(`Lorem
+
+<div>
+    <canvas id="canvas-element"></canvas>
+</div>
+
+Ipsum`), `<p>Lorem</p><div>
+    <canvas id="canvas-element"></canvas>
+</div><p>Ipsum</p>`);

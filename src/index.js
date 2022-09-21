@@ -72,11 +72,13 @@ const getBlocks = exports.getBlocks = (md) => {
                 const firstClosingTag = block.indexOf('>');
                 const name = block.slice(1, Math.min(firstSpace, firstClosingTag))
 
-                for (i += 1; i < blocks.length; i++) {
-                    block += '\n\n' + blocks[i];
-
-                    if (block.endsWith(name + '>')) {
-                        break;
+                if (!block.endsWith(name + '>')) {
+                    for (i += 1; i < blocks.length; i++) {
+                        block += '\n\n' + blocks[i];
+    
+                        if (block.endsWith(name + '>')) {
+                            break;
+                        }
                     }
                 }
             }
