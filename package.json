@@ -1,6 +1,6 @@
 {
   "name": "@fsoc/smdp",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "A simple markdown parser.",
   "main": "src/index.js",
   "scripts": {
